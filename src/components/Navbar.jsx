@@ -62,33 +62,33 @@ function Navbar({ className }) {
               </div>
             </MenuItem>
 
-            <MenuItem setActive={setActive} active={active} item="Pricing">
+            {/* <MenuItem setActive={setActive} active={active} item="Pricing">
               <div className="flex flex-col space-y-4 text-sm">
-                <HoveredLink href="/hobby">Hobby</HoveredLink>
+                <HoveredLink href="/hobby">W</HoveredLink>
                 <HoveredLink href="/individual">Individual</HoveredLink>
                 <HoveredLink href="/team">Team</HoveredLink>
                 <HoveredLink href="/enterprise">Enterprise</HoveredLink>
               </div>
-            </MenuItem>
-            <MenuItem setActive={setActive} active={active} item="Pricing"> dark
+            </MenuItem> */}
+            <MenuItem setActive={setActive} active={active} item="dark"> dark
               <button
                 onClick={toggleDarkMode}
                 className="text-2xl  bg-gray-200 dark:bg-gray-800 rounded-full focus:outline-none"
               >
-                {darkMode ? (
+                {!darkMode ? (
                   <FaSun className="text-yellow-500" />
                 ) : (
                   <FaMoon className="text-blue-500" />
                 )}
               </button>
             </MenuItem>
-            <MenuItem setActive={setActive} active={active} item="Pricing">
+            {/* <MenuItem setActive={setActive} active={active} item="Pricing">
               <div className="flex flex-col text-sm">
                  <button className="bg-blue-500 text-white rounded-lg hover:bg-blue-600">
                 Login
                 </button>
               </div>
-            </MenuItem>
+            </MenuItem> */}
           </Menu>
 
           {/* Login Button */}
