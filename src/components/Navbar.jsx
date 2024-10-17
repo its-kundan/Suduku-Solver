@@ -94,7 +94,7 @@ function Navbar({ className }) {
 
             <MenuItem setActive={setActive} active={active} item="(Reqest a Feature)">
               <div className="flex flex-col space-y-4 text-sm">
-                <HoveredLink href="/web-dev"> <a href="https://github.com/its-kundan/Suduku-Solver" // Replace with your actual GitHub link
+                <HoveredLink href="/web-dev"> <a href="https://github.com/its-kundan/Suduku-Solver"  target="_blank" rel="noopener noreferrer"// Replace with your actual GitHub link
                 className="inline-block text-2xl bg-gray-200 dark:bg-gray-800 rounded-full focus:outline-none hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">
                 <FaGithub className="text-current" /> {/* Assuming FaGithub is imported */}
               </a></HoveredLink>
