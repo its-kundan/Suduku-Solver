@@ -117,7 +117,7 @@ const SudokuSolver = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-none dark:bg-none">
       <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white"> <Cover > Sudoku Solver</Cover></h1>
       <div className="grid grid-cols-9 grid-rows-9 gap-1 border-4 border-black dark:border-gray-500">
         {grid.map((row, rowIndex) =>
