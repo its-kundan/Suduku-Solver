@@ -20,6 +20,7 @@ A modern, feature-rich Sudoku application built with Next.js 15, TypeScript, and
 - **Anti-Cheat**: Server-side validation and time thresholds
 - **Real-time Updates**: Live leaderboard updates via WebSockets
 
+
 ### 🔐 Authentication & Security
 - **Google OAuth**: Quick sign-in with Google accounts
 - **Email Magic Links**: Passwordless authentication

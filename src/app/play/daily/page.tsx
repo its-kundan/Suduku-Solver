@@ -180,7 +180,7 @@ export default function DailyPlayPage() {
             
             <div>
               <h1 className="text-2xl font-bold text-white mb-2">Puzzle Complete!</h1>
-              <p className="text-white/70">Congratulations on completing today's puzzle!</p>
+                              <p className="text-white/70">Congratulations on completing today&apos;s puzzle!</p>
             </div>
             
             <div className="space-y-3 text-sm">

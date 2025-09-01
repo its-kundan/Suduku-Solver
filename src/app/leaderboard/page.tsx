@@ -151,7 +151,7 @@ export default function LeaderboardPage() {
               Ready to Join the Competition?
             </h3>
             <p className="text-xl text-white/70 mb-8">
-              Start playing today and see where you rank among the world's best Sudoku players.
+              Start playing today and see where you rank among the world&apos;s best Sudoku players.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/play/daily">

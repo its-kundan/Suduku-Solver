@@ -47,7 +47,7 @@ const HUMAN_THRESHOLDS: Record<Difficulty, number> = {
  * Calculate score for a completed puzzle
  */
 export function computeScore(params: ScoreParams): ScoreResult {
-  const { difficulty, seconds, mistakes, hintPenalty, hintsUsed } = params;
+  const { difficulty, seconds, mistakes, hintsUsed } = params;
   
   // Anti-cheat check
   if (seconds < HUMAN_THRESHOLDS[difficulty]) {
@@ -95,11 +95,11 @@ export function getScoreBreakdown(params: ScoreParams): {
   grade: string;
 } {
   const result = computeScore(params);
-  const { difficulty, score } = result;
+  const { score } = result;
   
   // Grade calculation
   let grade: string;
-  const percentage = score / BASE_SCORES[difficulty];
+  const percentage = score / BASE_SCORES[params.difficulty];
   
   if (percentage >= 0.9) grade = 'S';
   else if (percentage >= 0.8) grade = 'A';

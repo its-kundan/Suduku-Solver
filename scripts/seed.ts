@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { generateFromSeed } from '../src/lib/core-sudoku';
+import { generateFromSeed } from '../src/lib/sudoku';
 
 const prisma = new PrismaClient();
 
@@ -200,7 +200,7 @@ async function main() {
 
   // Create sample puzzles for the last 7 days
   console.log('🧩 Creating sample puzzles...');
-  const difficulties = ['easy', 'medium', 'hard', 'expert'];
+  const difficulties = ['easy', 'medium', 'hard', 'expert'] as const;
   const today = new Date();
   
   for (let i = 0; i < 7; i++) {
@@ -210,7 +210,11 @@ async function main() {
     
     for (const difficulty of difficulties) {
       const seed = `SUDOKU:${dateKey}:${difficulty}`;
-      const result = generateFromSeed(seed, difficulty);
+      const seedHash = seed.split('').reduce((acc: number, b: string) => { 
+        const newAcc = ((acc << 5) - acc) + b.charCodeAt(0); 
+        return newAcc & newAcc; 
+      }, 0);
+      const result = generateFromSeed(seedHash, difficulty);
       
       await prisma.puzzle.create({
         data: {
@@ -229,7 +233,11 @@ async function main() {
   for (let i = 0; i < 20; i++) {
     const difficulty = difficulties[Math.floor(Math.random() * difficulties.length)];
     const seed = `PRACTICE:${Date.now()}:${i}:${difficulty}`;
-    const result = generateFromSeed(seed, difficulty);
+    const seedHash = seed.split('').reduce((acc: number, b: string) => { 
+      const newAcc = ((acc << 5) - acc) + b.charCodeAt(0); 
+      return newAcc & newAcc; 
+    }, 0);
+    const result = generateFromSeed(seedHash, difficulty);
     
     await prisma.puzzle.create({
       data: {

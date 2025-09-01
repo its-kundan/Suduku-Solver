@@ -1,114 +1,89 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import { requireAuth } from '@/lib/auth';
-import { PlayStartSchema } from '@/lib/schemas';
-import { checkRateLimitOrThrow, getRateLimitHeaders } from '@/lib/ratelimit';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { checkRateLimitOrThrow } from "@/lib/ratelimit";
+import { PlayStartSchema } from "@/lib/schemas";
+import { prisma } from "@/lib/db";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting
-    const clientIP = request.ip || 'unknown';
-    const rateLimitResult = await checkRateLimitOrThrow('GAME_COMPLETION', clientIP);
-    
-    // Authentication required
-    const { userId } = await requireAuth();
-    
-    // Parse and validate request body
-    const body = await request.json();
-    const { puzzleId } = PlayStartSchema.parse(body);
-    
-    // Verify puzzle exists
-    const puzzle = await prisma.puzzle.findUnique({
-      where: { id: puzzleId },
-      select: { id: true, difficulty: true },
-    });
-    
-    if (!puzzle) {
+    const clientIP = request.headers.get('x-forwarded-for')?.split(',')[0] || 
+                    request.headers.get('x-real-ip') || 
+                    'unknown';
+    await checkRateLimitOrThrow("GAME_COMPLETION", clientIP);
+
+    // Get session (placeholder for now)
+    const session = await getServerSession();
+    if (!session?.user?.id) {
       return NextResponse.json(
-        { error: { code: 'PUZZLE_NOT_FOUND', message: 'Puzzle not found' } },
-        { status: 404 }
-      );
-    }
-    
-    // Check if play session already exists
-    let play = await prisma.play.findUnique({
-      where: {
-        userId_puzzleId: {
-          userId,
-          puzzleId,
-        },
-      },
-    });
-    
-    if (play) {
-      // Update existing session if it was abandoned
-      if (play.status === 'abandoned') {
-        play = await prisma.play.update({
-          where: { id: play.id },
-          data: {
-            status: 'in_progress',
-            startedAt: new Date(),
-            finishedAt: null,
-            seconds: 0,
-            mistakes: 0,
-            hintsUsed: 0,
-            score: 0,
-          },
-        });
-      }
-    } else {
-      // Create new play session
-      play = await prisma.play.create({
-        data: {
-          userId,
-          puzzleId,
-          status: 'in_progress',
-          startedAt: new Date(),
-        },
-      });
-    }
-    
-    // Return play session info
-    return NextResponse.json({
-      playId: play.id,
-      status: play.status,
-      startedAt: play.startedAt,
-      puzzle: {
-        id: puzzle.id,
-        difficulty: puzzle.difficulty,
-      },
-    }, {
-      headers: getRateLimitHeaders(rateLimitResult),
-    });
-    
-  } catch (error) {
-    console.error('Error starting play session:', error);
-    
-    if (error instanceof Error && error.message.includes('Authentication required')) {
-      return NextResponse.json(
-        { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
+        { error: "Authentication required" },
         { status: 401 }
       );
     }
+
+    const userId = session.user.id;
+
+    // Parse and validate request body
+    const body = await request.json();
+    const validatedData = PlayStartSchema.parse(body);
+    const { puzzleId, difficulty } = validatedData;
+
+    // Check if user already has an active play session for this puzzle
+    let play = await prisma.play.findFirst({
+      where: {
+        userId,
+        puzzleId,
+        status: "in_progress",
+      },
+    });
+
+    if (play) {
+      // Resume existing session
+      return NextResponse.json({
+        playId: play.id,
+        status: "resumed",
+        startedAt: play.startedAt,
+      });
+    }
+
+    // Create new play session
+    play = await prisma.play.create({
+      data: {
+        userId,
+        puzzleId,
+        difficulty,
+        status: "in_progress",
+        startedAt: new Date(),
+      },
+    });
+
+    return NextResponse.json({
+      playId: play.id,
+      status: "started",
+      startedAt: play.startedAt,
+    });
+  } catch (error) {
+    console.error("Play start error:", error);
     
-    if (error instanceof Error && error.message.includes('Rate limit exceeded')) {
+    if (error instanceof Error && error.message.includes("Rate limit")) {
       return NextResponse.json(
-        { error: { code: 'RATE_LIMIT_EXCEEDED', message: error.message } },
+        { error: "Too many requests" },
         { status: 429 }
       );
     }
-    
-    if (error instanceof Error && error.message.includes('Puzzle not found')) {
+
+    if (error instanceof Error && error.message.includes("Authentication required")) {
       return NextResponse.json(
-        { error: { code: 'PUZZLE_NOT_FOUND', message: 'Puzzle not found' } },
-        { status: 404 }
+        { error: "Authentication required" },
+        { status: 401 }
       );
     }
-    
+
     return NextResponse.json(
-      { error: { code: 'INTERNAL_ERROR', message: 'Failed to start play session' } },
+      { error: "Failed to start play session" },
       { status: 500 }
     );
   }

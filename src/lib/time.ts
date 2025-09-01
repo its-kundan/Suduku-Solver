@@ -27,7 +27,7 @@ export function dateKeyIST(date: Date = new Date()): string {
  */
 export function todayDifficultyPattern(): 'easy' | 'medium' | 'hard' | 'expert' {
   const today = dayjs().tz(IST_TZ);
-  const dayOfYear = today.dayOfYear();
+  const dayOfYear = today.date();
   
   // Pattern: easy -> medium -> hard -> expert -> repeat
   const difficulties: Array<'easy' | 'medium' | 'hard' | 'expert'> = ['easy', 'medium', 'hard', 'expert'];
