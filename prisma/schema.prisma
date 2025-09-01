@@ -21,19 +21,32 @@ model User {
   xp        UserXP?
   streak    Streak?
   achievements UserAchievement[]
+  admin     Admin?
+
+  @@index([email])
+  @@index([createdAt])
+}
+
+model Admin {
+  userId String @id
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 }
 
 model Puzzle {
   id         String   @id @default(cuid())
-  dateKey    String?  @unique // YYYY-MM-DD for daily
+  dateKey    String?  // YYYY-MM-DD for daily, null for practice
   difficulty String   // easy, medium, hard, expert
   seed       String
-  puzzle     Json
-  solution   Json
+  puzzle     Json     // 9x9 grid with numbers
+  solution   Json     // 9x9 grid with solution
   createdAt  DateTime @default(now())
   plays      Play[]
 
   @@unique([dateKey, difficulty])
+  @@index([dateKey])
+  @@index([difficulty])
+  @@index([createdAt])
 }
 
 model Play {
@@ -47,10 +60,15 @@ model Play {
   hintsUsed  Int      @default(0)
   status     String   @default("in_progress") // completed, abandoned
   score      Int      @default(0)
-  user       User     @relation(fields: [userId], references: [id])
-  puzzle     Puzzle   @relation(fields: [puzzleId], references: [id])
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  puzzle     Puzzle   @relation(fields: [puzzleId], references: [id], onDelete: Cascade)
 
-  @@index([userId, puzzleId])
+  @@unique([userId, puzzleId])
+  @@index([userId])
+  @@index([puzzleId])
+  @@index([status])
+  @@index([finishedAt])
+  @@index([score])
 }
 
 model Streak {
@@ -59,7 +77,10 @@ model Streak {
   currentCount  Int      @default(0)
   longestCount  Int      @default(0)
   lastPlayedIST DateTime?
-  user          User     @relation(fields: [userId], references: [id])
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([currentCount])
+  @@index([longestCount])
 }
 
 model LeaderboardDaily {
@@ -69,18 +90,24 @@ model LeaderboardDaily {
   seconds  Int
   mistakes Int
   score    Int
+  createdAt DateTime @default(now())
 
   @@unique([userId, dateKey])
   @@index([dateKey])
+  @@index([userId])
+  @@index([score])
+  @@index([seconds])
 }
 
 model Achievement {
-  id    String @id @default(cuid())
-  code  String @unique
-  title String
-  desc  String
-  icon  String
-  users UserAchievement[]
+  id          String @id @default(cuid())
+  code        String @unique
+  title       String
+  description String
+  icon        String
+  criteria    Json   // Achievement criteria
+  users       UserAchievement[]
+  createdAt   DateTime @default(now())
 }
 
 model UserAchievement {
@@ -88,14 +115,22 @@ model UserAchievement {
   userId        String
   achievementId String
   earnedAt      DateTime    @default(now())
-  user          User        @relation(fields: [userId], references: [id])
-  achievement   Achievement @relation(fields: [achievementId], references: [id])
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@index([achievementId])
+  @@index([earnedAt])
 }
 
 model Level {
-  code  String @id
-  minXP Int
-  users UserXP[]
+  code     String @id
+  minXP    Int
+  title    String
+  description String?
+  users    UserXP[]
+  createdAt DateTime @default(now())
 }
 
 model UserXP {
@@ -103,6 +138,9 @@ model UserXP {
   userId    String @unique
   xp        Int    @default(0)
   levelCode String?
-  user      User   @relation(fields: [userId], references: [id])
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   level     Level? @relation(fields: [levelCode], references: [code])
+
+  @@index([xp])
+  @@index([levelCode])
 }

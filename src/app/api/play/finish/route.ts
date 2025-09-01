@@ -1,117 +1,140 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { finishPlaySchema } from '@/lib/validation';
-import { calculateScore } from '@/lib/scoring';
-import { updateStreak } from '@/lib/streaks';
-import { isComplete } from '@/lib/core-sudoku';
+import { requireAuth } from '@/lib/auth';
+import { FinishPlaySchema } from '@/lib/schemas';
+import { checkRateLimitOrThrow, getRateLimitHeaders } from '@/lib/ratelimit';
+import { computeScore, calculateXP } from '@/lib/scoring';
+import { updateStreakOnFinish } from '@/lib/streaks';
+import { dateKeyIST, isTodayIST } from '@/lib/time';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    // Rate limiting
+    const clientIP = request.ip || 'unknown';
+    const rateLimitResult = await checkRateLimitOrThrow('GAME_COMPLETION', clientIP);
     
+    // Authentication required
+    const { userId } = await requireAuth();
+    
+    // Parse and validate request body
     const body = await request.json();
-    const { playId, seconds, mistakes, hintsUsed, finalGrid } = finishPlaySchema.parse(body);
+    const { playId, seconds, mistakes, hintsUsed, finalGrid } = FinishPlaySchema.parse(body);
     
-    // Get play and puzzle
+    // Get play session and verify ownership
     const play = await prisma.play.findUnique({
       where: { id: playId },
-      include: { puzzle: true },
+      include: {
+        puzzle: true,
+      },
     });
     
     if (!play) {
       return NextResponse.json(
-        { error: 'Play not found' },
+        { error: { code: 'PLAY_NOT_FOUND', message: 'Play session not found' } },
         { status: 404 }
       );
     }
     
-    if (play.userId !== session.user.id) {
+    if (play.userId !== userId) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
+        { error: { code: 'FORBIDDEN', message: 'Access denied' } },
+        { status: 403 }
       );
     }
     
     if (play.status === 'completed') {
       return NextResponse.json(
-        { error: 'Play already completed' },
+        { error: { code: 'ALREADY_COMPLETED', message: 'Puzzle already completed' } },
         { status: 400 }
       );
     }
     
-    // Verify solution
+    // Verify solution is correct
     const puzzle = play.puzzle;
-    const solution = puzzle.solution as number[][];
-    
-    if (!isComplete(finalGrid) || JSON.stringify(finalGrid) !== JSON.stringify(solution)) {
+    if (!puzzle.solution || !Array.isArray(puzzle.solution)) {
       return NextResponse.json(
-        { error: 'Invalid solution' },
+        { error: { code: 'INVALID_PUZZLE', message: 'Invalid puzzle data' } },
+        { status: 500 }
+      );
+    }
+    
+    // Check if final grid matches solution
+    const solution = puzzle.solution as number[][];
+    const isCorrect = finalGrid.every((row, rowIndex) =>
+      row.every((cell, colIndex) => cell === solution[rowIndex][colIndex])
+    );
+    
+    if (!isCorrect) {
+      return NextResponse.json(
+        { error: { code: 'INCORRECT_SOLUTION', message: 'Solution is incorrect' } },
         { status: 400 }
       );
     }
     
     // Calculate score
-    const scoreResult = calculateScore(
-      puzzle.difficulty as any,
+    const scoreResult = computeScore({
+      difficulty: puzzle.difficulty as any,
       seconds,
       mistakes,
-      hintsUsed
-    );
+      hintsUsed,
+    });
     
-    // Update play
+    // Calculate XP
+    const xpEarned = calculateXP(scoreResult.score, puzzle.difficulty as any);
+    
+    // Update play session
     const updatedPlay = await prisma.play.update({
       where: { id: playId },
       data: {
+        status: 'completed',
         finishedAt: new Date(),
         seconds,
         mistakes,
         hintsUsed,
-        status: 'completed',
         score: scoreResult.score,
       },
     });
     
-    // Update user XP and level
-    const userXP = await prisma.userXP.upsert({
-      where: { userId: session.user.id },
+    // Update user XP
+    await prisma.userXP.upsert({
+      where: { userId },
       update: {
-        xp: { increment: scoreResult.xp },
+        xp: {
+          increment: xpEarned,
+        },
       },
       create: {
-        userId: session.user.id,
-        xp: scoreResult.xp,
+        userId,
+        xp: xpEarned,
+        levelCode: 'beginner',
       },
     });
     
-    // Update streak if this is a daily puzzle
+    // Update streak if this is a daily puzzle completed today
     let streakUpdate = null;
-    if (puzzle.dateKey) {
-      streakUpdate = await updateStreak(session.user.id, new Date());
+    if (puzzle.dateKey && isTodayIST(new Date())) {
+      streakUpdate = await updateStreakOnFinish(userId);
     }
     
-    // Update leaderboard for daily puzzles
+    // Update leaderboard if this is a daily puzzle
+    let leaderboardEntry = null;
     if (puzzle.dateKey) {
-      await prisma.leaderboardDaily.upsert({
+      leaderboardEntry = await prisma.leaderboardDaily.upsert({
         where: {
           userId_dateKey: {
-            userId: session.user.id,
+            userId,
             dateKey: puzzle.dateKey,
           },
         },
         update: {
-          seconds: Math.min(seconds, updatedPlay.seconds),
-          mistakes: Math.min(mistakes, updatedPlay.mistakes),
-          score: Math.max(scoreResult.score, updatedPlay.score),
+          seconds: Math.min(seconds, leaderboardEntry?.seconds || seconds),
+          mistakes: Math.min(mistakes, leaderboardEntry?.mistakes || mistakes),
+          score: Math.max(scoreResult.score, leaderboardEntry?.score || 0),
         },
         create: {
-          userId: session.user.id,
+          userId,
           dateKey: puzzle.dateKey,
           seconds,
           mistakes,
@@ -120,17 +143,82 @@ export async function POST(request: NextRequest) {
       });
     }
     
+    // Return completion result
     return NextResponse.json({
-      success: true,
+      playId: updatedPlay.id,
       score: scoreResult.score,
-      xp: scoreResult.xp,
+      xpEarned,
+      scoreBreakdown: {
+        baseScore: scoreResult.baseScore,
+        timeBonus: scoreResult.timeBonus,
+        mistakePenalty: scoreResult.mistakePenalty,
+        hintPenalty: scoreResult.hintPenalty,
+      },
       streak: streakUpdate,
-      totalXP: userXP.xp,
+      leaderboard: leaderboardEntry ? {
+        rank: 0, // Will be calculated separately
+        score: leaderboardEntry.score,
+        time: leaderboardEntry.seconds,
+        mistakes: leaderboardEntry.mistakes,
+      } : null,
+    }, {
+      headers: getRateLimitHeaders(rateLimitResult),
     });
+    
   } catch (error) {
     console.error('Error finishing play:', error);
+    
+    if (error instanceof Error && error.message.includes('Authentication required')) {
+      return NextResponse.json(
+        { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
+        { status: 401 }
+      );
+    }
+    
+    if (error instanceof Error && error.message.includes('Rate limit exceeded')) {
+      return NextResponse.json(
+        { error: { code: 'RATE_LIMIT_EXCEEDED', message: error.message } },
+        { status: 429 }
+      );
+    }
+    
+    if (error instanceof Error && error.message.includes('Completion time too fast')) {
+      return NextResponse.json(
+        { error: { code: 'ANTI_CHEAT', message: error.message } },
+        { status: 400 }
+      );
+    }
+    
+    if (error instanceof Error && error.message.includes('Play session not found')) {
+      return NextResponse.json(
+        { error: { code: 'PLAY_NOT_FOUND', message: 'Play session not found' } },
+        { status: 404 }
+      );
+    }
+    
+    if (error instanceof Error && error.message.includes('Access denied')) {
+      return NextResponse.json(
+        { error: { code: 'FORBIDDEN', message: 'Access denied' } },
+        { status: 403 }
+      );
+    }
+    
+    if (error instanceof Error && error.message.includes('Puzzle already completed')) {
+      return NextResponse.json(
+        { error: { code: 'ALREADY_COMPLETED', message: 'Puzzle already completed' } },
+        { status: 400 }
+      );
+    }
+    
+    if (error instanceof Error && error.message.includes('Solution is incorrect')) {
+      return NextResponse.json(
+        { error: { code: 'INCORRECT_SOLUTION', message: 'Solution is incorrect' } },
+        { status: 400 }
+      );
+    }
+    
     return NextResponse.json(
-      { error: 'Failed to finish play' },
+      { error: { code: 'INTERNAL_ERROR', message: 'Failed to finish play' } },
       { status: 500 }
     );
   }
