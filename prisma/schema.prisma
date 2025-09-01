@@ -1,0 +1,107 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String?
+  email     String?  @unique
+  image     String?
+  provider  String?
+  createdAt DateTime @default(now())
+  plays     Play[]
+  xp        UserXP?
+  streak    Streak?
+  achievements UserAchievement[]
+}
+
+model Puzzle {
+  id         String   @id @default(cuid())
+  dateKey    String?  @unique // YYYY-MM-DD for daily
+  difficulty String   // easy, medium, hard, expert
+  seed       String
+  puzzle     Json     // number[][]
+  solution   Json     // number[][]
+  createdAt  DateTime @default(now())
+  plays      Play[]
+}
+
+model Play {
+  id         String   @id @default(cuid())
+  userId     String
+  puzzleId   String
+  startedAt  DateTime @default(now())
+  finishedAt DateTime?
+  seconds    Int      @default(0)
+  mistakes   Int      @default(0)
+  hintsUsed  Int      @default(0)
+  status     String   @default("in_progress") // completed, abandoned
+  score      Int      @default(0)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  puzzle     Puzzle   @relation(fields: [puzzleId], references: [id], onDelete: Cascade)
+
+  @@index([userId, puzzleId])
+}
+
+model Streak {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  currentCount  Int      @default(0)
+  longestCount  Int      @default(0)
+  lastPlayedIST DateTime?
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model LeaderboardDaily {
+  id       String @id @default(cuid())
+  dateKey  String
+  userId   String
+  seconds  Int
+  mistakes Int
+  score    Int
+
+  @@unique([userId, dateKey])
+  @@index([dateKey])
+  @@index([userId, dateKey])
+}
+
+model Achievement {
+  id    String @id @default(cuid())
+  code  String @unique
+  title String
+  desc  String
+  icon  String
+  users UserAchievement[]
+}
+
+model UserAchievement {
+  id            String      @id @default(cuid())
+  userId        String
+  achievementId String
+  earnedAt      DateTime    @default(now())
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+}
+
+model Level {
+  code  String @id
+  minXP Int
+  users UserXP[]
+}
+
+model UserXP {
+  id        String @id @default(cuid())
+  userId    String @unique
+  xp        Int    @default(0)
+  levelCode String?
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  level     Level? @relation(fields: [levelCode], references: [code])
+}
