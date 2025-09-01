@@ -1,236 +1,241 @@
-# Sudoku Premium 🧩
+# 🧩 Sudoku Premium - Advanced Sudoku Gaming Platform
 
-A premium Sudoku game built with Next.js 15, featuring daily challenges, leaderboards, streaks, and a beautiful dark-first UI with glassmorphism effects.
+A modern, feature-rich Sudoku application built with Next.js 15, TypeScript, and premium gaming features. Challenge yourself with daily puzzles, compete on leaderboards, and track your progress across multiple difficulty levels.
 
 ## ✨ Features
 
-- **Daily Challenges** - New puzzles every day with consistent difficulty
-- **Streak System** - Build and maintain your daily solving streak
-- **Multiple Difficulties** - Easy, Medium, Hard, and Expert levels
-- **Leaderboards** - Compete with players worldwide
-- **Progress Tracking** - XP system, levels, and achievements
-- **Smart Features** - Notes, hints, undo/redo, conflict detection
-- **Premium UI** - Dark theme with glassmorphism and smooth animations
-- **PWA Support** - Install as a native app
-- **Authentication** - Google OAuth and Email magic links
-- **Responsive Design** - Works perfectly on all devices
+### 🎮 Core Gameplay
+- **Daily Challenges**: New puzzles every day with consistent difficulty
+- **Multiple Difficulty Levels**: Easy, Medium, Hard, and Expert
+- **Practice Mode**: Unlimited practice puzzles at your own pace
+- **Smart Validation**: Real-time conflict detection and error highlighting
+- **Notes System**: Use candidate notes to plan your moves
+- **Undo/Redo**: Full history tracking for mistake recovery
 
-## 🚀 Tech Stack
+### 🏆 Premium Features
+- **Global Leaderboards**: Compete with players worldwide
+- **Streak System**: Build daily streaks and maintain momentum
+- **Achievement System**: Unlock rewards and track milestones
+- **Progress Tracking**: Monitor your improvement over time
+- **XP & Leveling**: Earn experience points and level up
+- **Performance Analytics**: Detailed stats and best times
 
-- **Framework**: Next.js 15 (App Router)
-- **Language**: TypeScript
-- **Styling**: TailwindCSS + shadcn/ui
-- **Animations**: Framer Motion
-- **State Management**: Zustand
-- **Database**: Prisma + PostgreSQL
-- **Authentication**: NextAuth v5 (Auth.js)
-- **Data Fetching**: TanStack Query
-- **Icons**: Lucide React
-- **Validation**: Zod
+### 🎨 Modern UI/UX
+- **Responsive Design**: Works perfectly on all devices
+- **Dark/Light Mode**: Toggle between themes
+- **Smooth Animations**: Framer Motion powered interactions
+- **Beautiful Graphics**: Modern gradient backgrounds and visual effects
+- **Accessibility**: Keyboard navigation and screen reader support
 
-## 📦 Installation
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 18+ 
+- PostgreSQL database
+- pnpm (recommended) or npm
+
+### Installation
 
 1. **Clone the repository**
    ```bash
-   git clone <your-repo-url>
-   cd premium-sudoku
+   git clone https://github.com/its-kundan/Suduku-Solver.git
+   cd Suduku-Solver
    ```
 
 2. **Install dependencies**
    ```bash
-   npm install
-   # or
    pnpm install
+   # or
+   npm install
    ```
 
 3. **Set up environment variables**
    ```bash
-   cp .env.example .env.local
+   cp env.example .env.local
    ```
    
-   Fill in your environment variables:
+   Edit `.env.local` with your configuration:
    ```env
    # Database
-   DATABASE_URL="postgresql://username:password@localhost:5432/premium_sudoku"
+   DATABASE_URL="postgresql://username:password@localhost:5432/sudoku_premium"
    
    # NextAuth
-   AUTH_SECRET="your-auth-secret-here"
-   AUTH_URL="http://localhost:3000"
+   NEXTAUTH_URL="http://localhost:3000"
+   NEXTAUTH_SECRET="your-secret-key-here"
    
-   # Google OAuth
-   GOOGLE_CLIENT_ID="your-google-client-id"
-   GOOGLE_CLIENT_SECRET="your-google-client-secret"
-   
-   # Email (Resend)
-   RESEND_API_KEY="your-resend-api-key"
-   FROM_EMAIL="noreply@yoursudokuapp.com"
+   # OAuth Providers (optional)
+   GITHUB_ID=""
+   GITHUB_SECRET=""
    ```
 
 4. **Set up the database**
    ```bash
    # Generate Prisma client
-   npm run db:generate
+   pnpm db:generate
    
    # Push schema to database
-   npm run db:push
+   pnpm db:push
    
-   # Seed the database
-   npm run db:seed
+   # Seed initial data (optional)
+   pnpm db:seed
    ```
 
 5. **Run the development server**
    ```bash
-   npm run dev
+   pnpm dev
    ```
 
 6. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
 
-## 🗄️ Database Setup
+## 🏗️ Project Structure
 
-### Option 1: Local PostgreSQL
-```bash
-# Install PostgreSQL locally or use Docker
-docker run --name postgres -e POSTGRES_PASSWORD=password -e POSTGRES_DB=premium_sudoku -p 5432:5432 -d postgres
+```
+src/
+├── app/                    # Next.js 15 app directory
+│   ├── api/               # API routes
+│   │   ├── daily/         # Daily puzzle endpoints
+│   │   ├── play/          # Game session endpoints
+│   │   └── auth/          # Authentication endpoints
+│   ├── play/              # Game pages
+│   │   ├── daily/         # Daily challenge
+│   │   └── levels/        # Practice levels
+│   ├── leaderboard/       # Leaderboard page
+│   └── layout.tsx         # Root layout
+├── components/             # React components
+│   ├── EnhancedSudokuBoard.tsx  # Main game board
+│   ├── Leaderboard.tsx          # Leaderboard component
+│   └── ui/                # UI components
+├── lib/                   # Utility libraries
+│   ├── store.ts           # Zustand game state
+│   ├── db.ts              # Database connection
+│   └── core-sudoku.ts     # Core game logic
+└── prisma/                # Database schema
+    └── schema.prisma      # Prisma schema
 ```
 
-### Option 2: Neon (Recommended for production)
-1. Create a free account at [neon.tech](https://neon.tech)
-2. Create a new project
-3. Copy the connection string to your `.env.local`
+## 🎯 Game Modes
 
-## 🔐 Authentication Setup
+### Daily Challenge
+- New puzzle every day
+- Global leaderboards
+- Streak tracking
+- Performance scoring
 
-### Google OAuth
-1. Go to [Google Cloud Console](https://console.cloud.google.com)
-2. Create a new project or select existing
-3. Enable Google+ API
-4. Create OAuth 2.0 credentials
-5. Add authorized redirect URI: `http://localhost:3000/api/auth/callback/google`
-6. Copy Client ID and Secret to your `.env.local`
+### Practice Levels
+- **Easy**: Perfect for beginners (5-10 min)
+- **Medium**: Moderate complexity (10-20 min)
+- **Hard**: Advanced techniques (20-40 min)
+- **Expert**: Master level (40+ min)
 
-### Email Authentication (Resend)
-1. Sign up at [resend.com](https://resend.com)
-2. Get your API key
-3. Add to your `.env.local`
+### Leaderboards
+- Daily, weekly, and monthly rankings
+- Difficulty-based competition
+- Achievement showcase
+- Progress tracking
 
-## 📱 PWA Features
+## 🛠️ Technology Stack
 
-The app includes PWA support with:
-- Offline functionality for current puzzle
-- Install prompt
-- App-like experience
-- Service worker for caching
+- **Frontend**: Next.js 15, React 18, TypeScript
+- **Styling**: Tailwind CSS, Framer Motion
+- **State Management**: Zustand
+- **Database**: PostgreSQL with Prisma ORM
+- **Authentication**: NextAuth.js
+- **Deployment**: Vercel-ready
 
-## 🎮 Game Features
+## 🔧 Development
 
-### Core Sudoku Engine
-- **Solver**: Backtracking algorithm
-- **Generator**: Creates unique puzzles with specified difficulty
-- **Validation**: Real-time conflict detection
-- **Difficulty Rating**: Automatic difficulty assessment
+### Available Scripts
 
-### Game Mechanics
-- **Timer**: Tracks solving time
-- **Mistake Counter**: Counts invalid moves
-- **Hint System**: Provides assistance when needed
-- **Note Mode**: Toggle for pencil marks
-- **Undo/Redo**: Full move history
+```bash
+# Development
+pnpm dev              # Start development server
+pnpm build            # Build for production
+pnpm start            # Start production server
 
-### Scoring System
-- **Base XP**: Varies by difficulty
-- **Time Bonus**: Faster completion = more XP
-- **Penalties**: Mistakes and hints reduce score
-- **Level Progression**: 9 levels from Beginner to Legend
+# Database
+pnpm db:generate      # Generate Prisma client
+pnpm db:push          # Push schema changes
+pnpm db:migrate       # Run migrations
+pnpm db:seed          # Seed database
+pnpm db:studio        # Open Prisma Studio
 
-## 🏆 Leaderboards
+# Testing
+pnpm test             # Run tests
+pnpm test:ui          # Run tests with UI
+pnpm e2e              # Run end-to-end tests
 
-- **Daily**: Today's best times per difficulty
-- **Weekly**: Weekly aggregated scores
-- **All-time**: Historical best performances
-- **Streak Rankings**: Longest active streaks
+# Linting
+pnpm lint             # Run ESLint
+pnpm type-check       # Run TypeScript check
+```
 
-## 🎯 Achievements
+### Code Quality
 
-Unlock achievements for:
-- First puzzle completion
-- Streak milestones (3, 7, 30 days)
-- Perfect scores (no mistakes)
-- Speed records
-- Level progression
-- Difficulty mastery
+- **TypeScript**: Full type safety
+- **ESLint**: Code linting and formatting
+- **Prettier**: Code formatting
+- **Husky**: Git hooks for quality checks
+
+## 🌟 Key Features Explained
+
+### Smart Game Logic
+The game includes advanced Sudoku solving algorithms with:
+- Real-time validation
+- Conflict detection
+- Candidate notes system
+- Undo/redo functionality
+
+### Performance Tracking
+Track your improvement with:
+- Completion times
+- Mistake counts
+- Hint usage
+- Streak maintenance
+- XP progression
+
+### Social Features
+- Global leaderboards
+- Achievement sharing
+- Progress comparison
+- Community challenges
 
 ## 🚀 Deployment
 
 ### Vercel (Recommended)
-1. Push your code to GitHub
-2. Connect your repository to Vercel
-3. Add environment variables in Vercel dashboard
-4. Deploy!
+1. Connect your GitHub repository
+2. Set environment variables
+3. Deploy automatically on push
 
-### Environment Variables for Production
-```env
-DATABASE_URL="your-production-database-url"
-AUTH_SECRET="your-production-auth-secret"
-AUTH_URL="https://your-domain.com"
-GOOGLE_CLIENT_ID="your-google-client-id"
-GOOGLE_CLIENT_SECRET="your-google-client-secret"
-RESEND_API_KEY="your-resend-api-key"
-FROM_EMAIL="noreply@yourdomain.com"
-```
-
-## 🧪 Testing
-
-```bash
-# Run unit tests
-npm run test
-
-# Run E2E tests
-npm run e2e
-
-# Run type checking
-npm run type-check
-```
-
-## 📁 Project Structure
-
-```
-src/
-├── app/                    # Next.js App Router
-│   ├── api/               # API routes
-│   ├── play/              # Game pages
-│   └── layout.tsx         # Root layout
-├── components/            # React components
-│   ├── ui/               # shadcn/ui components
-│   ├── SudokuBoard.tsx   # Main game board
-│   └── GameControls.tsx  # Game controls
-├── lib/                  # Utility libraries
-│   ├── core-sudoku/      # Sudoku engine
-│   ├── db.ts            # Database client
-│   ├── auth.ts          # Authentication
-│   ├── store.ts         # Zustand store
-│   └── utils.ts         # Utility functions
-└── styles/              # Global styles
-```
+### Self-Hosted
+1. Build the application: `pnpm build`
+2. Set up PostgreSQL database
+3. Configure environment variables
+4. Run with: `pnpm start`
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
 
-## 📄 License
+## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- Built with [Next.js](https://nextjs.org)
-- UI components from [shadcn/ui](https://ui.shadcn.com)
-- Icons from [Lucide](https://lucide.dev)
-- Animations with [Framer Motion](https://www.framer.com/motion/)
+- Built with ❤️ using Next.js and modern web technologies
+- Inspired by classic Sudoku puzzles
+- Community-driven development approach
+
+## 📞 Support
+
+- **Issues**: [GitHub Issues](https://github.com/its-kundan/Suduku-Solver/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/its-kundan/Suduku-Solver/discussions)
+- **Email**: [Your Email]
 
 ---
 
